@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Days, Months & Seasons Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sun:#FFD93D; --coral:#FF6B6B; --mint:#6BCB77; --violet:#845EC2;
+    --blue:#4D96FF; --orange:#FF9F1C; --bg:#f0f6ff; --card:#ffffff;
+    --text:#1a1a2e; --muted:#6b7280; --border:#e2e8f0;
+    --correct:#22c55e; --wrong:#ef4444;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
+    min-height:100vh; display:flex; flex-direction:column;
+    align-items:center; padding:20px 16px 40px;
+  }
+  .rainbow-bar {
+    width:100%; max-width:640px; height:8px;
+    background:linear-gradient(90deg,#FF6B6B,#FF9F1C,#FFD93D,#6BCB77,#4D96FF,#845EC2,#FF6EB4);
+    border-radius:4px; margin-bottom:24px;
+  }
+  .quiz-header { width:100%; max-width:640px; text-align:center; margin-bottom:18px; }
+  .quiz-header h1 { font-family:'Fredoka One',cursive; font-size:clamp(1.8rem,5vw,2.6rem); color:var(--violet); }
+  .date-banner {
+    width:100%; max-width:640px;
+    background:linear-gradient(135deg,#845EC2,#4D96FF); color:white;
+    border-radius:14px; padding:12px 20px; text-align:center;
+    font-size:.95rem; font-weight:700; margin-bottom:22px;
+    box-shadow:0 4px 14px rgba(132,94,194,.25);
+  }
+  .progress-wrap { width:100%; max-width:640px; margin-bottom:8px; display:flex; align-items:center; gap:10px; }
+  .progress-track { flex:1; height:12px; background:var(--border); border-radius:99px; overflow:hidden; }
+  .progress-fill  { height:100%; border-radius:99px; background:linear-gradient(90deg,#6BCB77,#4D96FF); transition:width .5s ease; }
+  .progress-label { font-size:.82rem; font-weight:800; color:var(--muted); white-space:nowrap; }
+
+  /* section label */
+  .section-label {
+    width:100%; max-width:640px; border-radius:12px; padding:10px 18px;
+    font-family:'Fredoka One',cursive; font-size:1.2rem; color:white;
+    margin-bottom:16px; display:flex; align-items:center; gap:10px;
+  }
+  .sl-days    { background:linear-gradient(135deg,#4D96FF,#6BCB77); }
+  .sl-months  { background:linear-gradient(135deg,#FF6B6B,#FF9F1C); }
+  .sl-seasons { background:linear-gradient(135deg,#845EC2,#FF6EB4); }
+  .sl-mixed   { background:linear-gradient(135deg,#6BCB77,#4D96FF); }
+  .sl-sorting { background:linear-gradient(135deg,#FFD93D,#FF6B6B); }
+
+  /* question card */
+  .question-card {
+    width:100%; max-width:640px; background:white; border-radius:20px;
+    padding:28px 26px 22px; box-shadow:0 4px 24px rgba(0,0,0,.08);
+    border-left:6px solid var(--violet); animation:slideIn .3s ease;
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateY(18px);} to{opacity:1;transform:translateY(0);} }
+
+  /* question header row */
+  .q-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:20px; }
+  .q-header-text { flex:1; }
+  .q-meta { font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:8px; }
+  .q-text { font-size:1.25rem; font-weight:800; color:var(--text); line-height:1.35; }
+
+  /* speak button */
+  .speak-btn {
+    flex-shrink:0;
+    width:48px; height:48px; border-radius:50%; border:none;
+    background:linear-gradient(135deg,#845EC2,#4D96FF);
+    color:white; font-size:1.3rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 3px 10px rgba(132,94,194,.35);
+    transition:all .18s;
+  }
+  .speak-btn:hover { transform:scale(1.1); box-shadow:0 5px 14px rgba(132,94,194,.45); }
+  .speak-btn.speaking { animation:pulse 0.8s infinite; background:linear-gradient(135deg,#22c55e,#4D96FF); }
+  @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.15);} }
+
+  /* choices */
+  .choices { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+  .choice-btn {
+    padding:14px 12px; border-radius:14px; border:2.5px solid var(--border);
+    background:#f8fafc; font-family:'Nunito',sans-serif; font-size:1rem;
+    font-weight:800; cursor:pointer; transition:all .18s; color:var(--text); text-align:center;
+  }
+  .choice-btn:hover:not(:disabled) { border-color:var(--blue); background:#eff6ff; transform:translateY(-2px); }
+  .choice-btn.correct  { border-color:var(--correct); background:#f0fdf4; color:var(--correct); }
+  .choice-btn.wrong    { border-color:var(--wrong);   background:#fef2f2; color:var(--wrong); }
+  .choice-btn.reveal-correct { border-color:var(--correct); background:#f0fdf4; color:var(--correct); }
+  .choice-btn:disabled { cursor:default; }
+
+  /* feedback */
+  .feedback { margin-top:14px; padding:12px 16px; border-radius:12px; font-weight:800; font-size:1rem; display:none; }
+  .feedback.show { display:block; }
+  .feedback.correct-fb { background:#f0fdf4; color:#15803d; }
+  .feedback.wrong-fb   { background:#fef2f2; color:#b91c1c; }
+
+  .today-hint {
+    display:inline-block; background:#fffbeb; color:#92400e;
+    border:1.5px solid #fde68a; border-radius:8px; padding:5px 12px;
+    font-size:.82rem; font-weight:700; margin-bottom:12px;
+  }
+
+  /* drag */
+  .word-bank { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .bank-item {
+    padding:8px 14px; border-radius:10px; background:var(--sun); color:#1a1a2e;
+    font-weight:800; font-size:.88rem; cursor:grab; border:2px solid #f59e0b;
+    transition:all .15s; user-select:none;
+  }
+  .bank-item:hover { transform:translateY(-2px); box-shadow:0 3px 8px rgba(0,0,0,.12); }
+  .drag-list {
+    display:flex; flex-wrap:wrap; gap:8px; min-height:52px; padding:10px;
+    border-radius:12px; border:2.5px dashed var(--border); background:#f8fafc; margin-bottom:8px;
+  }
+  .drag-list.drag-over { border-color:var(--blue); background:#eff6ff; }
+  .drag-item {
+    padding:8px 14px; border-radius:10px; background:white; border:2px solid var(--border);
+    font-weight:700; font-size:.88rem; cursor:grab; user-select:none; box-shadow:0 2px 5px rgba(0,0,0,.07);
+  }
+  .drag-item.dragging { opacity:.4; }
+  .drag-item.correct-item { border-color:var(--correct); background:#f0fdf4; color:var(--correct); }
+  .drag-item.wrong-item   { border-color:var(--wrong);   background:#fef2f2; color:var(--wrong); }
+  .check-btn {
+    margin-top:12px; padding:10px 24px; border-radius:10px; border:none;
+    background:var(--blue); color:white; font-family:'Nunito',sans-serif;
+    font-weight:800; font-size:.95rem; cursor:pointer; transition:all .18s;
+  }
+  .check-btn:hover { background:#2563eb; transform:translateY(-1px); }
+  .check-btn:disabled { background:var(--muted); cursor:default; transform:none; }
+
+  /* next btn */
+  .next-btn {
+    width:100%; max-width:640px; margin-top:16px; padding:16px; border-radius:16px;
+    border:none; background:linear-gradient(135deg,#845EC2,#4D96FF); color:white;
+    font-family:'Fredoka One',cursive; font-size:1.3rem; cursor:pointer;
+    transition:all .2s; box-shadow:0 4px 16px rgba(132,94,194,.3); display:none;
+  }
+  .next-btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(132,94,194,.4); }
+  .next-btn.visible { display:block; }
+
+  /* finished */
+  .finished-screen {
+    width:100%; max-width:640px; background:white; border-radius:24px;
+    padding:40px 30px; text-align:center; box-shadow:0 6px 30px rgba(0,0,0,.1);
+    display:none; animation:slideIn .4s ease;
+  }
+  .finished-screen.show { display:block; }
+  .finished-screen h2 { font-family:'Fredoka One',cursive; font-size:2.2rem; color:var(--violet); margin-bottom:12px; }
+  .big-score { font-family:'Fredoka One',cursive; font-size:5rem; color:var(--blue); line-height:1; margin:16px 0 8px; }
+  .score-label { font-size:1rem; font-weight:700; color:var(--muted); margin-bottom:20px; }
+  .final-bar-wrap { background:var(--border); border-radius:99px; height:18px; margin:16px 0 24px; overflow:hidden; }
+  .final-bar-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#6BCB77,#4D96FF); transition:width 1.2s ease; }
+  .hu-praise {
+    background:linear-gradient(135deg,#FFF7ED,#FFF); border:2px solid #FDE68A;
+    border-radius:14px; padding:16px 20px; margin:0 0 22px;
+    font-size:1rem; font-weight:700; color:#92400E; line-height:1.6;
+  }
+  .hu-praise .hu-title { font-family:'Fredoka One',cursive; font-size:1.2rem; color:#B45309; margin-bottom:8px; }
+  .restart-btn {
+    padding:14px 40px; border-radius:14px; border:none; background:var(--violet);
+    color:white; font-family:'Nunito',sans-serif; font-weight:800; font-size:1.05rem;
+    cursor:pointer; transition:all .2s;
+  }
+  .restart-btn:hover { background:#6d28d9; transform:translateY(-2px); }
+
+  /* no-speech warning */
+  .no-speech-warn {
+    width:100%; max-width:640px; background:#FFF7ED; border:1.5px solid #FDE68A;
+    border-radius:10px; padding:10px 16px; font-size:.85rem; font-weight:700;
+    color:#92400E; margin-bottom:14px; display:none; text-align:center;
+  }
+
+  /* ── Responsive ── */
+
+  /* Large phones / tablets (481px – 767px) */
+  @media(max-width:767px) {
+    body { padding:14px 12px 36px; }
+    .question-card { padding:22px 18px 18px; }
+    .q-text { font-size:1.15rem; }
+    .choice-btn { padding:13px 10px; font-size:.95rem; }
+    .next-btn { font-size:1.15rem; padding:15px; }
+    .finished-screen { padding:32px 20px; }
+    .big-score { font-size:4rem; }
+  }
+
+  /* Small phones (up to 480px) — two-column choices, bigger tap targets */
+  @media(max-width:480px) {
+    body { padding:10px 10px 32px; }
+    .quiz-header h1 { font-size:1.6rem; }
+    .date-banner { font-size:.82rem; padding:10px 14px; border-radius:12px; }
+    .section-label { font-size:1rem; padding:9px 14px; }
+    .question-card { padding:18px 14px 16px; border-radius:16px; border-left-width:5px; }
+    .q-meta { font-size:.68rem; }
+    .q-text { font-size:1.05rem; line-height:1.4; }
+    .speak-btn { width:44px; height:44px; font-size:1.2rem; }
+    .choices { grid-template-columns:1fr 1fr; gap:8px; }
+    .choice-btn {
+      padding:14px 8px; font-size:.88rem; border-radius:12px;
+      /* bigger tap target on touch */
+      min-height:52px;
+    }
+    .today-hint { font-size:.78rem; }
+    .bank-item { font-size:.82rem; padding:8px 10px; }
+    .drag-item { font-size:.82rem; padding:8px 10px; }
+    .drag-list { min-height:60px; }
+    .check-btn { width:100%; padding:12px; font-size:.9rem; }
+    .next-btn { font-size:1.05rem; padding:15px; border-radius:14px; }
+    .feedback { font-size:.9rem; }
+    .progress-label { font-size:.75rem; }
+    .finished-screen { padding:28px 16px; border-radius:18px; }
+    .finished-screen h2 { font-size:1.8rem; }
+    .big-score { font-size:3.5rem; }
+    .score-label { font-size:.9rem; }
+    .hu-praise { font-size:.9rem; padding:14px 16px; }
+    .restart-btn { padding:13px 32px; font-size:.95rem; }
+  }
+
+  /* Very small phones (up to 360px) — single column choices */
+  @media(max-width:360px) {
+    .choices { grid-template-columns:1fr; }
+    .choice-btn { min-height:48px; }
+    .q-text { font-size:1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="rainbow-bar"></div>
+
+<div class="quiz-header">
+  <h1>📅 Days, Months &amp; Seasons</h1>
+</div>
+
+<div class="date-banner" id="date-banner">📌 Loading today's date…</div>
+<div class="no-speech-warn" id="no-speech-warn">⚠️ Audio is not supported in this browser. Please use Chrome or Edge for audio.</div>
+
+<div class="progress-wrap">
+  <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <div class="progress-label" id="progress-label">1 / ?</div>
+</div>
+
+<div id="question-area"></div>
+<button class="next-btn" id="next-btn" onclick="nextQuestion()">Next →</button>
+
+<div class="finished-screen" id="finished-screen">
+  <div style="font-size:3rem;margin-bottom:8px;">🎉</div>
+  <h2>Well Done!</h2>
+  <div class="big-score" id="final-score">0</div>
+  <div class="score-label" id="final-label">out of ?</div>
+  <div class="final-bar-wrap"><div class="final-bar-fill" id="final-bar" style="width:0%"></div></div>
+  <div class="hu-praise" id="hu-praise-box">
+    <div class="hu-title">🇭🇺 Szuper munka!</div>
+    <div id="hu-praise-text"></div>
+  </div>
+  <button class="restart-btn" onclick="restartQuiz()">🔄 Start Again</button>
+</div>
+
+<script>
+// ── Speech ────────────────────────────────────────────────────────────────
+const hasSpeech = 'speechSynthesis' in window;
+let gbVoice = null;
+
+if (!hasSpeech) {
+  document.getElementById('no-speech-warn').style.display = 'block';
+}
+
+// Load voices — Chrome loads async
+function loadVoices() {
+  const voices = window.speechSynthesis.getVoices();
+  // Prefer: en-GB voices, look for "Daniel", "Google UK English", or any en-GB
+  gbVoice =
+    voices.find(v => v.name === 'Daniel') ||
+    voices.find(v => v.name.includes('Google UK English Male')) ||
+    voices.find(v => v.name.includes('Google UK English Female')) ||
+    voices.find(v => v.name.includes('UK English')) ||
+    voices.find(v => v.lang === 'en-GB') ||
+    voices.find(v => v.lang.startsWith('en')) ||
+    null;
+}
+
+if (hasSpeech) {
+  loadVoices();
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+let activeSpeakBtn = null;
+
+function speak(text, onEnd) {
+  if (!hasSpeech) return;
+  window.speechSynthesis.cancel();
+  // Strip emojis for cleaner speech
+  const clean = text.replace(/[\u{1F300}-\u{1FFFF}]/gu, '')
+                    .replace(/[📆🗓️🌸🧩🔢❄️☀️🍂💡✅❌⚠️🌟🎉🏆💪]/g, '')
+                    .replace(/→/g, 'arrow')
+                    .replace(/_+/g, 'blank')
+                    .replace(/\s+/g, ' ').trim();
+  const utt = new SpeechSynthesisUtterance(clean);
+  utt.lang = 'en-GB';
+  utt.rate = 0.88;
+  utt.pitch = 1.0;
+  if (gbVoice) utt.voice = gbVoice;
+
+  utt.onstart = () => {
+    if (activeSpeakBtn) activeSpeakBtn.classList.add('speaking');
+  };
+  utt.onend = utt.onerror = () => {
+    if (activeSpeakBtn) activeSpeakBtn.classList.remove('speaking');
+    if (onEnd) onEnd();
+  };
+  window.speechSynthesis.speak(utt);
+}
+
+function speakQuestion() {
+  if (!hasSpeech) return;
+  activeSpeakBtn = document.getElementById('speak-q-btn');
+  speak(QUESTIONS[current].text);
+}
+
+// ── Data ──────────────────────────────────────────────────────────────────
+const DAYS   = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+const today     = new Date();
+const dowIdx    = (today.getDay() + 6) % 7;
+const todayName = DAYS[dowIdx];
+const yestName  = DAYS[(dowIdx + 6) % 7];
+const tomName   = DAYS[(dowIdx + 1) % 7];
+const monthName = MONTHS[today.getMonth()];
+
+document.getElementById('date-banner').textContent =
+  `📌 Today is ${todayName}, ${today.getDate()} ${monthName} ${today.getFullYear()}`;
+
+function shuffle(arr) { return [...arr].sort(() => Math.random() - .5); }
+function pickOthers(list, correct, n) { return shuffle(list.filter(x => x !== correct)).slice(0, n); }
+function mcOpts(list, correct) { return shuffle([correct, ...pickOthers(list, correct, 3)]); }
+function Q(section, text, data) { return { section, text, ...data }; }
+
+// ── Questions ─────────────────────────────────────────────────────────────
+const QUESTIONS = [
+  // DAYS
+  Q('days','How many days are there in a week?',
+    { type:'mc', options:['5','6','7','8'], correct:'7' }),
+  Q('days','What day is it today?',
+    { type:'mc', options:mcOpts(DAYS,todayName), correct:todayName, hint:true }),
+  Q('days','What day will it be tomorrow?',
+    { type:'mc', options:mcOpts(DAYS,tomName), correct:tomName }),
+  Q('days','What day was it yesterday?',
+    { type:'mc', options:mcOpts(DAYS,yestName), correct:yestName }),
+  Q('days','What day comes after Wednesday?',
+    { type:'mc', options:['Tuesday','Thursday','Friday','Saturday'], correct:'Thursday' }),
+  Q('days','What day comes before Wednesday?',
+    { type:'mc', options:['Monday','Tuesday','Thursday','Friday'], correct:'Tuesday' }),
+  Q('days','Is Saturday a weekday or a weekend?',
+    { type:'mc', options:['Weekday','Weekend'], correct:'Weekend' }),
+
+  // MONTHS
+  Q('months','How many months are there in a year?',
+    { type:'mc', options:['7','10','12','14'], correct:'12' }),
+  Q('months','What month is it now?',
+    { type:'mc', options:mcOpts(MONTHS,monthName), correct:monthName, hint:true }),
+  Q('months','What month comes after September?',
+    { type:'mc', options:['August','October','November','December'], correct:'October' }),
+  Q('months','What month comes before June?',
+    { type:'mc', options:['April','May','July','August'], correct:'May' }),
+  Q('months','Which month is the last month of the year?',
+    { type:'mc', options:['October','November','December','January'], correct:'December' }),
+  Q('months','Which month is the first month of the year?',
+    { type:'mc', options:['January','February','March','April'], correct:'January' }),
+
+  // SEASONS
+  Q('seasons','How many seasons are there in a year?',
+    { type:'mc', options:['2','3','4','5'], correct:'4' }),
+  Q('seasons','Which season comes after Winter?',
+    { type:'mc', options:['Spring 🌸','Summer ☀️','Autumn 🍂','Winter ❄️'], correct:'Spring 🌸' }),
+  Q('seasons','Which season comes before Autumn?',
+    { type:'mc', options:['Winter ❄️','Spring 🌸','Summer ☀️','Autumn 🍂'], correct:'Summer ☀️' }),
+  // MIXED
+  Q('mixed','Is Thursday a day, a month or a season?',
+    { type:'mc', options:['Day 📆','Month 🗓️','Season 🌸'], correct:'Day 📆' }),
+  Q('mixed','Is November a day, a month or a season?',
+    { type:'mc', options:['Day 📆','Month 🗓️','Season 🌸'], correct:'Month 🗓️' }),
+  Q('mixed','Is Spring a month?',
+    { type:'mc', options:['Yes','No — it is a season!'], correct:'No — it is a season!' }),
+  Q('mixed','Is August a day?',
+    { type:'mc', options:['Yes','No — it is a month!'], correct:'No — it is a month!' }),
+
+  // SEQUENCING
+  Q('sorting','What is missing?  Monday → Tuesday → ___ → Thursday',
+    { type:'mc', options:['Monday','Tuesday','Friday','Wednesday'], correct:'Wednesday' }),
+  Q('sorting','Put these months in the correct order through the year.',
+    { type:'order', items:MONTHS, correct:MONTHS, dragId:'seq-months-drop', bankId:'seq-months-bank' }),
+];
+
+const TOTAL = QUESTIONS.length;
+
+const HU_PRAISE = [
+  { min:0,  max:39,  text:'Még kell gyakorolni, de ne add fel! Minden nap egy kicsit jobb leszel. 💪' },
+  { min:40, max:69,  text:'Jó munka! Látszik, hogy igyekszel. Hamarosan még jobban fog menni! 🌟' },
+  { min:70, max:89,  text:'Nagyon szépen csináltad! Büszke lehetsz magadra! 🎉' },
+  { min:90, max:100, text:'Fantasztikus! Tökéletes munka! Te vagy a bajnok! 🏆🌟' },
+];
+
+let current = 0, scored = 0, answered = 0, currentDone = false;
+let dragged = null;
+
+const sectionColors = { days:'sl-days', months:'sl-months', seasons:'sl-seasons', mixed:'sl-mixed', sorting:'sl-sorting' };
+const sectionLabels = { days:'📆 Days of the Week', months:'🗓️ Months of the Year', seasons:'🌸 Seasons', mixed:'🧩 Day, Month or Season?', sorting:'🔢 Sequencing' };
+const borderColors  = { days:'#4D96FF', months:'#FF6B6B', seasons:'#845EC2', mixed:'#6BCB77', sorting:'#FFD93D' };
+
+// ── Render ────────────────────────────────────────────────────────────────
+function renderQuestion(idx) {
+  currentDone = false;
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  activeSpeakBtn = null;
+
+  const q = QUESTIONS[idx];
+  const area = document.getElementById('question-area');
+  document.getElementById('next-btn').classList.remove('visible');
+
+  const pct = Math.round((idx / TOTAL) * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `${idx + 1} / ${TOTAL}`;
+
+  let html = '';
+  const prevSection = idx > 0 ? QUESTIONS[idx-1].section : null;
+  if (q.section !== prevSection) {
+    html += `<div class="section-label ${sectionColors[q.section]}">${sectionLabels[q.section]}</div>`;
+  }
+
+  html += `<div class="question-card" id="qcard" style="border-left-color:${borderColors[q.section]}">`;
+
+  // Header row: meta + text + 🔊 button
+  html += `<div class="q-header">`;
+  html += `<div class="q-header-text">`;
+  html += `<div class="q-meta">Question ${idx + 1} of ${TOTAL}</div>`;
+  html += `<div class="q-text">${q.text}</div>`;
+  html += `</div>`;
+  if (hasSpeech) {
+    html += `<button class="speak-btn" id="speak-q-btn" onclick="speakQuestion()" title="Listen to question">🔊</button>`;
+  }
+  html += `</div>`;
+
+  if (q.hint) html += `<div class="today-hint">💡 Look at the blue banner above!</div>`;
+
+  if (q.type === 'mc') {
+    html += `<div class="choices">`;
+    q.options.forEach(opt => {
+      const dc = opt === q.correct ? 'data-correct="true"' : '';
+      html += `<button class="choice-btn" ${dc} onclick="mcAnswer(this)">${opt}</button>`;
+    });
+    html += `</div>`;
+  }
+
+  if (q.type === 'order') {
+    html += `<p style="font-size:.8rem;color:var(--muted);font-weight:700;margin-bottom:8px;">👆 Drag all items into the box in the correct order</p>`;
+    html += `<div class="word-bank" id="${q.bankId}"></div>`;
+    html += `<div class="drag-list" id="${q.dragId}" ondragover="dragOver(event)" ondrop="dropItem(event,'${q.dragId}')" ondragleave="dragLeave(event)"></div>`;
+    html += `<button class="check-btn" id="order-check-btn" onclick="checkOrder()">✔ Check Order</button>`;
+  }
+
+  html += `<div class="feedback" id="q-feedback"></div></div>`;
+  area.innerHTML = html;
+
+  if (q.type === 'order') buildBank(q.bankId, q.items);
+}
+
+// ── MC ────────────────────────────────────────────────────────────────────
+function mcAnswer(btn) {
+  if (currentDone) return;
+  currentDone = true;
+  answered++;
+  window.speechSynthesis && window.speechSynthesis.cancel();
+
+  const btns = document.querySelectorAll('.choice-btn');
+  btns.forEach(b => b.disabled = true);
+
+  const isCorrect = btn.dataset.correct === 'true';
+  const q = QUESTIONS[current];
+
+  if (isCorrect) {
+    btn.classList.add('correct');
+    scored++;
+    showFeedback(true, '✅ Correct! Well done! 🌟');
+    if (hasSpeech) {
+      activeSpeakBtn = document.getElementById('speak-q-btn');
+      speak(`The answer is: ${q.correct}. Well done!`);
+    }
+  } else {
+    btn.classList.add('wrong');
+    btns.forEach(b => { if (b.dataset.correct === 'true') b.classList.add('reveal-correct'); });
+    showFeedback(false, `❌ Not quite. The correct answer is: ${q.correct}`);
+    if (hasSpeech) {
+      activeSpeakBtn = document.getElementById('speak-q-btn');
+      speak(`The correct answer is: ${q.correct}.`);
+    }
+  }
+  showNext();
+}
+
+// ── Drag ──────────────────────────────────────────────────────────────────
+function buildBank(bankId, items) {
+  const bank = document.getElementById(bankId);
+  if (!bank) return;
+  shuffle(items).forEach(word => {
+    const el = document.createElement('div');
+    el.className = 'bank-item drag-item';
+    el.textContent = word;
+    el.dataset.val = word;
+    makeDraggable(el);
+    bank.appendChild(el);
+  });
+}
+
+function makeDraggable(el) {
+  el.draggable = true;
+  el.addEventListener('dragstart', e => { dragged = el; setTimeout(() => el.classList.add('dragging'), 0); });
+  el.addEventListener('dragend',   () => { el.classList.remove('dragging'); dragged = null; });
+  el.addEventListener('touchstart', tStart, {passive:true});
+  el.addEventListener('touchmove',  tMove,  {passive:false});
+  el.addEventListener('touchend',   tEnd);
+}
+
+let tEl = null, tClone = null;
+function tStart(e) {
+  tEl = e.currentTarget;
+  const r = tEl.getBoundingClientRect();
+  tClone = tEl.cloneNode(true);
+  tClone.style.cssText = `position:fixed;opacity:.8;pointer-events:none;z-index:9999;left:${r.left}px;top:${r.top}px;width:${r.width}px;`;
+  document.body.appendChild(tClone);
+}
+function tMove(e) {
+  if (!tClone) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  tClone.style.left = (t.clientX - 40) + 'px';
+  tClone.style.top  = (t.clientY - 20) + 'px';
+}
+function tEnd(e) {
+  if (!tClone) return;
+  const t = e.changedTouches[0];
+  tClone.remove(); tClone = null;
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const dz = el ? el.closest('.drag-list') : null;
+  if (dz && tEl) dz.appendChild(tEl);
+  tEl = null;
+}
+
+function dragOver(e)  { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function dropItem(e, dropId) {
+  e.preventDefault();
+  document.getElementById(dropId).classList.remove('drag-over');
+  if (dragged) document.getElementById(dropId).appendChild(dragged);
+}
+
+function checkOrder() {
+  if (currentDone) return;
+  const q = QUESTIONS[current];
+  const zone = document.getElementById(q.dragId);
+  const items = [...zone.querySelectorAll('.drag-item,.bank-item')];
+  if (items.length !== q.correct.length) {
+    showFeedback(false, `⚠️ You need to place all ${q.correct.length} items. Drag them all in!`);
+    return;
+  }
+  currentDone = true;
+  answered++;
+  let ok = true;
+  items.forEach((el, i) => {
+    if (el.dataset.val === q.correct[i]) el.classList.add('correct-item');
+    else { el.classList.add('wrong-item'); ok = false; }
+  });
+  zone.querySelectorAll('.drag-item,.bank-item').forEach(el => el.draggable = false);
+  document.getElementById('order-check-btn').disabled = true;
+  if (ok) {
+    scored++;
+    showFeedback(true, '✅ Perfect order! Amazing! 🌟');
+    if (hasSpeech) { activeSpeakBtn = document.getElementById('speak-q-btn'); speak(`The correct order is: ${q.correct.join(', ')}. Amazing!`); }
+  } else {
+    showFeedback(false, `❌ Not quite. Correct order: ${q.correct.join(', ')}`);
+    if (hasSpeech) { activeSpeakBtn = document.getElementById('speak-q-btn'); speak(`The correct order is: ${q.correct.join(', ')}.`); }
+  }
+  showNext();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function showFeedback(correct, msg) {
+  const fb = document.getElementById('q-feedback');
+  fb.textContent = msg;
+  fb.className = 'feedback show ' + (correct ? 'correct-fb' : 'wrong-fb');
+}
+
+function showNext() {
+  const btn = document.getElementById('next-btn');
+  btn.textContent = current < TOTAL - 1 ? `Next →  (${current + 2} / ${TOTAL})` : '🏁 See My Score!';
+  btn.classList.add('visible');
+  setTimeout(() => btn.scrollIntoView({ behavior:'smooth', block:'nearest' }), 200);
+}
+
+function nextQuestion() {
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  current++;
+  if (current >= TOTAL) { showFinished(); return; }
+  document.getElementById('next-btn').classList.remove('visible');
+  renderQuestion(current);
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+function showFinished() {
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  document.getElementById('question-area').innerHTML = '';
+  document.getElementById('next-btn').classList.remove('visible');
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('progress-label').textContent = `${TOTAL} / ${TOTAL}`;
+
+  const pct = answered > 0 ? Math.round((scored / answered) * 100) : 0;
+  document.getElementById('final-score').textContent = scored;
+  document.getElementById('final-label').textContent = `out of ${answered} answered`;
+  setTimeout(() => { document.getElementById('final-bar').style.width = pct + '%'; }, 300);
+
+  const praise = HU_PRAISE.find(p => pct >= p.min && pct <= p.max) || HU_PRAISE[0];
+  document.getElementById('hu-praise-text').textContent = praise.text;
+
+  const fs = document.getElementById('finished-screen');
+  fs.classList.add('show');
+  fs.scrollIntoView({ behavior:'smooth', block:'start' });
+
+  // Speak the final score
+  if (hasSpeech) {
+    setTimeout(() => {
+      activeSpeakBtn = null;
+      speak(`Well done! You scored ${scored} out of ${answered}.`);
+    }, 800);
+  }
+}
+
+function restartQuiz() {
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  current = 0; scored = 0; answered = 0; currentDone = false;
+  document.getElementById('finished-screen').classList.remove('show');
+  QUESTIONS[1].options = mcOpts(DAYS, todayName);
+  QUESTIONS[2].options = mcOpts(DAYS, tomName);
+  QUESTIONS[3].options = mcOpts(DAYS, yestName);
+  QUESTIONS[8].options = mcOpts(MONTHS, monthName);
+  renderQuestion(0);
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+renderQuestion(0);
+</script>
+</body>
+</html>
